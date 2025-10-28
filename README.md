@@ -60,7 +60,7 @@
 - Python 3.7+
 - Playwright (用于网页渲染)
 - pdfCropMargins (用于PDF边距裁剪)
-- Ghostscript 或 Poppler (pdfCropMargins的依赖)
+- Ghostscript 或 Poppler (pdfCropMargins的依赖，其中Poppler提供pdftoppm工具)
 
 ## 安装步骤
 
@@ -104,6 +104,8 @@ brew install ghostscript poppler
 安装Homebrew
 /bin/zsh -c "$(curl -fsSL https://gitee.com/cunkai/HomebrewCN/raw/master/Homebrew.sh)"
 ```
+
+> 注意：在某些macOS版本上，GUI应用程序可能存在兼容性问题。如果遇到相关问题，建议使用命令行版本。
 
 4. 安装Playwright浏览器：
 ```bash
@@ -152,6 +154,8 @@ playwright install chromium
 
 ### 步骤二：运行转换脚本
 
+#### 命令行版本
+
 使用以下命令运行脚本：
 
 ```bash
@@ -162,7 +166,33 @@ python csv_links_to_pdf_playwright.py your_csv_file.csv
 python csv_links_to_pdf_playwright.py your_csv_file.csv --max-workers 5
 ```
 
+#### 图形界面版本
+
+使用以下命令启动图形界面版本：
+
+```bash
+python gui_app_custom.py
+```
+
+在图形界面中，您可以：
+1. 通过浏览按钮选择CSV文件
+2. 设置并发线程数
+3. 点击"开始转换"按钮开始处理
+4. 在日志区域查看处理进度和结果
+5. 随时点击"停止"按钮中止处理
+
 转换后的PDF文件会按公众号名称分类保存在相应文件夹中。
+
+> 注意：GUI版本在某些操作系统版本上可能存在兼容性问题。如果遇到问题，请使用命令行版本。
+
+> 示例运行结果：
+> ```
+> 2025-10-20 18:00:35,180 - INFO - 开始处理 小安驿站_2025-10-16.csv
+> 2025-10-20 18:00:35,181 - INFO - 开始处理 2个任务，使用 3 个并发线程
+> 2025-10-20 18:01:19,981 - INFO - 已保存为PDF: 小安驿站/2025-10-15_2个全球流行儿歌网站，小孩的英语启蒙教材.pdf
+> 2025-10-20 18:01:19,981 - INFO - 已保存为PDF: 小安驿站/2025-10-10_3个超清NBA直播网站，全球赛事免费看.pdf
+> 2025-10-20 18:01:20,004 - INFO - 处理完成。成功: 2, 失败: 0
+> ```
 
 ## 脚本参数说明
 
@@ -188,10 +218,11 @@ python csv_links_to_pdf_playwright.py your_csv_file.csv --max-workers 5
 
 1. 工具会在同目录下生成日志文件`pdf_processing.log`，可以查看处理详情
 2. 对于需要人机验证的链接，工具会跳过处理
-3. 如果遇到PDF边距裁剪失败，请确认已正确安装Ghostscript或Poppler
+3. 如果遇到PDF边距裁剪失败，请确认已正确安装Ghostscript或Poppler，并确保PATH环境变量包含了pdftoppm工具
 4. 工具默认使用无头模式（headless）运行浏览器，不会弹出浏览器窗口
 5. 如需处理大量文章，建议降低并发数以避免被网站限制
 6. 微信公众号有反爬虫机制，频繁抓取可能会被限制访问
+7. GUI版本在某些操作系统版本上可能存在兼容性问题，如遇到问题建议使用命令行版本
 
 ## 故障排除
 
@@ -199,6 +230,64 @@ python csv_links_to_pdf_playwright.py your_csv_file.csv --max-workers 5
 2. 如果PDF边距裁剪失败，请检查是否安装了Ghostscript或Poppler
 3. 如果页面加载失败，可能是网络问题或目标网站反爬虫策略，可适当增加重试次数
 
+## GUI界面安装注意事项和解决方案
+
+### Tkinter模块缺失问题
+
+在某些Python安装环境中，可能会遇到以下错误：
+```
+ModuleNotFoundError: No module named '_tkinter'
+```
+
+这表示Python环境中缺少Tkinter支持，解决方案如下：
+
+#### macOS系统解决方案
+
+1. 确保已安装tcl-tk库：
+```bash
+brew install tcl-tk
+```
+
+2. 使用pyenv重新安装Python并启用Tkinter支持：
+```bash
+unset PYENV_VERSION && export LDFLAGS="-L$(brew --prefix tcl-tk)/lib" && export CPPFLAGS="-I$(brew --prefix tcl-tk)/include" && export PKG_CONFIG_PATH="$(brew --prefix tcl-tk)/lib/pkgconfig" && export PYTHON_CONFIGURE_OPTS="--with-tcltk-includes='-I$(brew --prefix tcl-tk)/include' --with-tcltk-libs='-L$(brew --prefix tcl-tk)/lib -ltcl -ltk'" && pyenv install --force 3.11.9
+```
+
+3. 设置为默认Python版本：
+```bash
+pyenv global 3.11.9
+```
+
+#### 验证Tkinter是否可用
+
+运行以下命令验证Tkinter是否正确安装：
+```bash
+python -c "import tkinter; print('Tkinter is available')"
+```
+
+### GUI界面使用说明
+
+图形界面版本提供了更友好的用户交互体验：
+
+1. **文件选择**：通过浏览按钮选择CSV文件和输出目录
+2. **参数设置**：通过滑块调整并发线程数（1-10个线程）
+3. **日志显示**：实时显示处理进度和结果
+4. **操作按钮**：
+   - 开始处理：启动转换任务
+   - 退出：关闭应用程序
+
+### GUI兼容性说明
+
+GUI应用程序在以下情况下可能存在兼容性问题：
+
+1. **操作系统版本**：GUI版本需要macOS 12.0.7或更高版本，较低版本可能存在兼容性问题
+2. **Python环境**：某些Python安装可能缺少GUI支持库
+3. **显示问题**：在高分辨率屏幕上可能需要调整窗口大小
+
+如果遇到GUI兼容性问题，建议使用命令行版本执行任务。
+
 ## 版权声明
 
 本工具仅供学习交流使用，请遵守相关法律法规，尊重知识产权。
+
+关注【小安驿站】公众号，获取更多实用工具和教程！

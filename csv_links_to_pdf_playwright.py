@@ -14,21 +14,20 @@
 
 import csv
 import os
-from playwright.sync_api import sync_playwright
+import sys
 import time
 import subprocess
-import sys
+from playwright.sync_api import sync_playwright
 import logging
 import queue
 import threading
 from dataclasses import dataclass
 
-# 设置日志
+# 设置日志，不写入文件，只输出到控制台（避免在macOS应用中出现只读文件系统错误）
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("pdf_processing.log", encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -251,6 +250,9 @@ def process_csv_with_queue(csv_file, max_workers=1):  # 将默认并发数改为
     # 创建任务队列管理器
     queue_manager = TaskQueueManager(max_workers=max_workers)
     
+    # 获取当前工作目录作为基础目录
+    base_dir = os.getcwd()
+    
     # 读取CSV文件并添加任务到队列
     try:
         with open(csv_file, 'r', encoding='utf-8-sig') as file:
@@ -262,8 +264,8 @@ def process_csv_with_queue(csv_file, max_workers=1):  # 将默认并发数改为
                 链接 = row['链接'].strip()
                 日期 = row['日期'].strip()
                 
-                # 创建以公众号名称为名的文件夹
-                公众号目录 = 公众号
+                # 创建以公众号名称为名的文件夹（基于当前工作目录）
+                公众号目录 = os.path.join(base_dir, 公众号)
                 if not os.path.exists(公众号目录):
                     os.makedirs(公众号目录)
                 
@@ -311,6 +313,7 @@ def process_csv_with_queue(csv_file, max_workers=1):  # 将默认并发数改为
     # 最终统计
     stats = queue_manager.get_stats()
     logging.info(f"处理完成。成功: {stats['completed']}, 失败: {stats['failed']}")
+    return stats  # 返回统计信息
 
 if __name__ == "__main__":
     import argparse
